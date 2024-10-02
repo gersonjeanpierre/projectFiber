@@ -23,8 +23,7 @@ export const transposeMatrix = (matrix: any[][]): any[][] => {
 
 export const transformData = (data: any): any => {
   const departments = data.SheetNames;
-
-  const newDepartments: string[] = []; // Nueva lista de departamentos
+  // Nueva lista de departamentos
 
   const dataRuta: any[] = [];
 
@@ -63,7 +62,6 @@ export const transformData = (data: any): any => {
       departamento: department,
       rutas: rutas,
     });
-    newDepartments.push(department); // Agregar el nombre del departamento a la lista
   });
 
   return dataRuta;

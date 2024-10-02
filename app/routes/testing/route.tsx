@@ -1,7 +1,7 @@
 import { useState, useEffect, ChangeEvent } from "react";
 import { Input } from "~/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs";
-import RouteContent from "~/components/timbrado/RouteContent";
+import RouteContent from "~/routes/testing.$department.$routeId.$cto/RouteContent";
 import { transformData } from "~/components/timbrado/transformData";
 import {
   getAllKeys,
@@ -9,13 +9,16 @@ import {
   saveDataByKey,
 } from "~/components/services/indexedDBService";
 import { Button } from "~/components/ui/button";
-import { Link, useNavigate, useParams } from "@remix-run/react";
+import { Link, useNavigate } from "@remix-run/react";
 import { normalizeRouteText } from "./utils";
+import { Outlet } from "@remix-run/react";
+import { ResetIcon } from "@radix-ui/react-icons";
 
 const Timbrado = () => {
   const [routes, setRoutes] = useState<any[]>([]);
   const [filename, setFilename] = useState<string>("");
   const [keys, setKeys] = useState<string[]>([]);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const initializeData = async () => {
@@ -43,7 +46,6 @@ const Timbrado = () => {
       const dataFromDB: any[] = (await getDataByKey(key)) as any[];
       if (dataFromDB) {
         setRoutes(dataFromDB);
-
         setFilename(key);
       }
     } catch (error) {
@@ -53,8 +55,8 @@ const Timbrado = () => {
 
   const handleKeySelect = async (key: string) => {
     await loadDataFromDB(key);
-    console.log(routes.map((ruta) => ruta.departamento));
-    console.log(routes.map((ruta) => ruta.rutas));
+    // console.log(routes.map((ruta) => ruta.departamento));
+    // console.log(routes.map((ruta) => ruta.rutas));
   };
 
   const handleFileUpload = async (e: ChangeEvent<HTMLInputElement>) => {
@@ -76,8 +78,15 @@ const Timbrado = () => {
   };
 
   return (
-    <div className="container mx-auto p-4">
-      <h1 className="text-4xl mb-4 font-bold">Subir el Excel de rutas</h1>
+    <div className="container mx-auto mt-4">
+      <div className="flex gap-3">
+        <h1 className="text-4xl mb-4 font-bold">Subir el Excel de rutas</h1>
+        <Button onClick={() => navigate(-1)}>
+          <ResetIcon className="mr-2 h-4 w-4" />
+          Regresar
+        </Button>
+      </div>
+
       <Input
         type="file"
         onChange={handleFileUpload}
@@ -99,40 +108,20 @@ const Timbrado = () => {
         </div>
       </div>
       <div className="w-auto h-auto">
-        <Tabs defaultValue={""}>
-          <TabsList>
-            {routes
-              .map((ruta) => ruta.departamento)
-              .map((dept: string, index: number) => (
-                <TabsTrigger key={index} value={dept}>
-                  {dept}
-                </TabsTrigger>
-              ))}
-          </TabsList>
-
-          {routes.map((route: any, index: number) => (
-            <TabsContent key={index} value={route.departamento}>
-              <div>
-                {route.rutas.map((ruta: any, rutaIndex: number) => (
-                  <div key={rutaIndex}>
-                    <h2 className="text-lg font-bold ml-4 mt-3">{ruta.ruta}</h2>
-                    {/* Botón para cada ruta que navega dinámicamente */}
-                    <Link
-                      to={`/testing/${route.departamento}-${normalizeRouteText(
-                        ruta.ruta
-                      )}`}
-                    >
-                      <Button className="mb-4">
-                        Ver detalles de {ruta.ruta}
-                      </Button>
-                    </Link>
-                    <RouteContent ctos={route.ctos} />
-                  </div>
-                ))}
-              </div>
-            </TabsContent>
-          ))}
-        </Tabs>
+        <div className="flex gap-2 mb-3">
+          {routes
+            .map((ruta) => ruta.departamento)
+            .map((dept: string, index: number) => (
+              <Button
+                key={index}
+                onClick={() => navigate(`/testing/${filename}_${dept}`)}
+              >
+                {dept}
+              </Button>
+            ))}
+        </div>
+        {/* OUTLET */}
+        <Outlet context={{ routes }} />
       </div>
     </div>
   );

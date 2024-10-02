@@ -12,7 +12,7 @@ import { read, utils } from "xlsx";
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs";
 import { cleanCell, transposeMatrix } from "../../components/timbrado/utils";
-import RouteContent from "~/components/timbrado/RouteContent";
+import RouteContent from "~/routes/testing.$department.$routeId.$cto/RouteContent";
 import { transformData } from "~/components/timbrado/transformData";
 
 interface PropsComboBox {
@@ -125,32 +125,7 @@ const Timbrado = () => {
           accept=".xlsx"
           className="mb-4"
         />
-        <div className=" w-auto h-auto">
-          <Tabs defaultValue="LIMA">
-            <TabsList>
-              {department.map((data, index) => (
-                <TabsTrigger key={index} value={data}>
-                  {data}
-                </TabsTrigger>
-              ))}
-            </TabsList>
-            {department.map((data, index) => (
-              <TabsContent key={data} value={data}>
-                Contenido para {data}
-                <div>
-                  {dataRoutes[index].rutas.map((ruta: any, index: number) => (
-                    <>
-                      <h2 className="text-lg font-bold ml-4 mt-3">
-                        {ruta.ruta}
-                      </h2>
-                      <RouteContent ctos={ruta.ctos} />
-                    </>
-                  ))}
-                </div>
-              </TabsContent>
-            ))}
-          </Tabs>
-        </div>
+        <div className=" w-auto h-auto"></div>
       </div>
     </>
   );
