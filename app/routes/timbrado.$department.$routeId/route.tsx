@@ -16,18 +16,17 @@ const DisplayRoute = () => {
   const ctos = data.ctos || [];
   const [selectedCto, setSelectedCto] = useState<string | null>(null);
 
-  const selectCto = ctos.find(
-    (cto) => data.ruta === initRouteId(routeId ?? "")
-  );
+  const selectCto = ctos.find((cto) => cto.cto === selectedCto);
   const handleCto = (cto: string) => {
-    navigate(`/testing/${department}/${routeId}/${cto}`);
+    navigate(`/timbrado/${department}/${routeId}/${cto}`);
     setSelectedCto(cto);
   };
   console.log("data", data);
   console.log("selectCto", selectCto);
+  console.log("selectedCto", selectedCto);
   console.log(useParams());
-  console.log(ctos);
-  console.log(initRouteId(routeId ?? ""));
+  console.log("ctos ", ctos);
+  // console.log(initRouteId(routeId ?? ""));
   return (
     <>
       <div className="flex gap-2 flex-wrap mt-3">

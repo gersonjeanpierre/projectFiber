@@ -1,133 +1,129 @@
-import type { MetaFunction, LoaderFunctionArgs } from "@remix-run/node";
-import { Link, useLoaderData } from "@remix-run/react";
-export const meta: MetaFunction = () => {
-  return [{ title: "Timbrado" }, { name: "description", content: "Timbrado" }];
-};
-
-import { useState } from "react";
-import { Button } from "~/components/ui/button";
+import { useState, useEffect, ChangeEvent } from "react";
 import { Input } from "~/components/ui/input";
-import { Label } from "~/components/ui/label";
-import { read, utils } from "xlsx";
-
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs";
-import { cleanCell, transposeMatrix } from "../../components/timbrado/utils";
-import RouteContent from "~/routes/testing.$department.$routeId.$cto/RouteContent";
+import RouteContent from "~/routes/timbrado.$department.$routeId.$cto/RouteContent";
 import { transformData } from "~/components/timbrado/transformData";
-
-interface PropsComboBox {
-  value: string;
-  label: string;
-}
+import {
+  getAllKeys,
+  getDataByKey,
+  saveDataByKey,
+} from "~/components/services/indexedDBService";
+import { Button } from "~/components/ui/button";
+import { Link, useNavigate } from "@remix-run/react";
+import { normalizeRouteText } from "./utils";
+import { Outlet } from "@remix-run/react";
+import { ResetIcon } from "@radix-ui/react-icons";
 
 const Timbrado = () => {
-  const [routes, setRoutes] = useState([]);
-  const [activeTab, setActiveTab] = useState("");
+  const [routes, setRoutes] = useState<any[]>([]);
+  const [filename, setFilename] = useState<string>("");
+  const [keys, setKeys] = useState<string[]>([]);
+  const navigate = useNavigate();
 
-  const departamentosArray: PropsComboBox[] = [];
-  const gestoresArray: PropsComboBox[] = [];
-  const tecnicosArray: PropsComboBox[] = [];
+  useEffect(() => {
+    const initializeData = async () => {
+      await loadKeys();
+      if (keys.length > 0) {
+        await loadDataFromDB(keys[keys.length - 1]);
+      }
+    };
+    initializeData();
+  }, []);
 
-  const [open, setOpen] = useState(false);
+  const loadKeys = async () => {
+    try {
+      const dbKeys = await getAllKeys();
+      setKeys(dbKeys);
+      return dbKeys;
+    } catch (error) {
+      console.error("Error al cargar las claves de IndexedDB:", error);
+      return [];
+    }
+  };
 
-  const [dataRoutes, setDataRoutes] = useState([]);
+  const loadDataFromDB = async (key: string) => {
+    try {
+      const dataFromDB: any[] = (await getDataByKey(key)) as any[];
+      if (dataFromDB) {
+        setRoutes(dataFromDB);
+        setFilename(key);
+      }
+    } catch (error) {
+      console.error("Error al cargar datos de IndexedDB:", error);
+    }
+  };
 
-  const [department, setDepartment] = useState<string[]>([]);
+  const handleKeySelect = async (key: string) => {
+    await loadDataFromDB(key);
+    // console.log(routes.map((ruta) => ruta.departamento));
+    // console.log(routes.map((ruta) => ruta.rutas));
+  };
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    // const dataRuta: any[] = [];
+  const handleFileUpload = async (e: ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files) return;
+
     const file = e.target.files[0];
-    /* data is an ArrayBuffer */
     const fileData = await file.arrayBuffer();
+    const name = file.name.split(".")[0];
 
-    const newDepartments: string[] = []; // Nueva lista de departamentos
-
-    // departments.forEach((department) => {
-    //   let rutas: any[] = [];
-    //   const jsonData: any[] = utils.sheet_to_json(
-    //     workbook.Sheets[`${department}`],
-    //     {
-    //       header: 1,
-    //     }
-    //   );
-    //   const t = transposeMatrix(jsonData);
-
-    //   t.map((row) => {
-    //     let _ctos: string[] = [];
-    //     let ctoState: any[] = [];
-    //     for (let i = 3; i < row.length; i++) {
-    //       _ctos.push(row[i]);
-    //     }
-    //     _ctos.map((cto) => {
-    //       ctoState.push({
-    //         cto: cto,
-    //         state: "NO TIMBRADO",
-    //         observation: "",
-    //       });
-    //     });
-    //     let ruta = cleanCell(row[0]);
-    //     let gestor = cleanCell(row[1]);
-    //     let tecnico = cleanCell(row[2]).toUpperCase();
-    //     rutas.push({
-    //       ruta: ruta,
-    //       gestor: gestor,
-    //       tecnico: tecnico,
-    //       ctos: ctoState,
-    //     });
-    //   });
-
-    //   dataRuta.push({
-    //     departamento: department,
-    //     rutas: rutas,
-    //   });
-    //   newDepartments.push(department); // Agregar el nombre del departamento a la lista
-    // });
-    let dataRuta = transformData(fileData);
-    // new date dd/mm/yyyy
-    // const date = new Date();
-    // const formattedDate = `${String(date.getDate()).padStart(2, "0")}-${String(
-    //   date.getMonth() + 1
-    // ).padStart(2, "0")}-${date.getFullYear()}`;
-    // LOCAL STORAGE
-    // localStorage.setItem(`${formattedDate}`, JSON.stringify(dataRuta));
-
-    console.log("DataRuta", dataRuta);
-    console.log("typof", typeof dataRuta);
-    // console.log(
-    //   "DEPARTAMENTO",
-    //   dataRuta.find((data) => data.departamento === "LIMA")
-    // );
-    // console.log("RUTAS", dataRuta[0].rutas);
-    // console.log("CTOS", dataRuta[0].rutas[0].ctos);
-    setDepartment(newDepartments);
-    setDataRoutes(dataRuta); // Actualizar el estado de departamentos
-
-    console.log("DATA", dataRoutes);
-    //
-
-    // console.log("fileData", transformData(fileData));
+    try {
+      const dataRuta = transformData(fileData);
+      await saveDataByKey(name, dataRuta);
+      setRoutes(dataRuta);
+      setFilename(name);
+      await loadKeys();
+    } catch (error) {
+      console.error("Error al procesar el archivo:", error);
+    }
   };
 
   return (
-    <>
-      <div className="container mx-auto p-4">
-        <Link to="/work">
-          <Button>Volver</Button>
-        </Link>
-        <Link to="/testing">
-          <Button>Testing</Button>
-        </Link>
+    <div className="container mx-auto mt-4">
+      <div className="flex gap-3">
         <h1 className="text-4xl mb-4 font-bold">Subir el Excel de rutas</h1>
-        <Input
-          type="file"
-          onChange={handleFileUpload}
-          accept=".xlsx"
-          className="mb-4"
-        />
-        <div className=" w-auto h-auto"></div>
+        <Button onClick={() => navigate(-1)}>
+          <ResetIcon className="mr-2 h-4 w-4" />
+          Regresar
+        </Button>
       </div>
-    </>
+
+      <Input
+        type="file"
+        onChange={handleFileUpload}
+        accept=".xlsx"
+        className="mb-4"
+      />
+      <div className="mb-4">
+        <h2 className="text-2xl mb-2 font-semibold">Archivos guardados:</h2>
+        <div className="flex flex-wrap gap-2">
+          {keys.map((key) => (
+            <Button
+              key={key}
+              onClick={() => handleKeySelect(key)}
+              variant={filename === key ? "default" : "outline"}
+            >
+              {key}
+            </Button>
+          ))}
+        </div>
+      </div>
+      <div className="w-auto h-auto">
+        <div className="flex gap-2 mb-3">
+          {routes
+            .map((ruta) => ruta.departamento)
+            .map((dept: string, index: number) => (
+              <Button
+                key={index}
+                onClick={() => navigate(`/timbrado/${filename}_${dept}`)}
+              >
+                {dept}
+              </Button>
+            ))}
+        </div>
+        {/* OUTLET */}
+        <Outlet context={{ routes }} />
+      </div>
+    </div>
   );
 };
 

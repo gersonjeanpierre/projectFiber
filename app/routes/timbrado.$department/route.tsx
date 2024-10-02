@@ -21,7 +21,7 @@ export default function Departament() {
   const [selectedContent, setSelectedContent] = useState<string | null>(null);
 
   const handleRouteClick = (contenido: string) => {
-    navigate(`/testing/${param}/${normalizeRouteId(contenido)}`);
+    navigate(`/timbrado/${param}/${normalizeRouteId(contenido)}`);
     setSelectedContent(contenido);
   };
 

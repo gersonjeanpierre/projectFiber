@@ -13,7 +13,7 @@ import {
   useNavigate,
   useOutletContext,
 } from "@remix-run/react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Cto } from "~/components/interface/Route";
 import {
   addItem,
@@ -27,18 +27,34 @@ import { Input } from "~/components/ui/input";
 export default function Monitoring() {
   const navigate = useNavigate();
 
+  // Obtenemos el contexto del outlet que contiene el objeto CTO
+  const outlet = useOutletContext<Cto>();
   const fetcher = useFetcher();
-  const items = useLoaderData();
+
+  // Estado para los datos del formulario
   const [formData, setFormData] = useState({
-    cto: "",
+    cto: "", // Iniciamos vacío y lo actualizamos luego
     estado_cto: "",
     observacion: "",
     cto_campo: "",
     divisor: "",
     mcomentario: "",
   });
+
+  // Estado para manejar el ID de edición
   const [editingId, setEditingId] = useState<number | null>(null);
 
+  // useEffect para inicializar el campo `cto` solo en el primer renderizado o cuando `outlet.cto` cambie.
+  useEffect(() => {
+    if (outlet?.cto) {
+      setFormData((prevFormData) => ({
+        ...prevFormData,
+        cto: outlet.cto,
+      }));
+    }
+  }, [outlet?.cto]); // Se ejecutará cuando `outlet.cto` cambie.
+
+  // Maneja el envío del formulario
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (editingId) {
@@ -48,7 +64,7 @@ export default function Monitoring() {
     }
     fetcher.load("/cto");
     setFormData({
-      cto: "",
+      cto: outlet.cto,
       estado_cto: "",
       observacion: "",
       cto_campo: "",
@@ -58,26 +74,23 @@ export default function Monitoring() {
     setEditingId(null);
   };
 
+  // Maneja la eliminación de un item
   const handleDelete = async (id: number) => {
     await deleteItem("ctoDB", "ctoStore", id);
     fetcher.load("/cto");
   };
 
+  // Maneja la edición de un item
   const handleEdit = (item: any) => {
     setFormData(item);
     setEditingId(item.id);
   };
 
-  console.log("items", items);
-
   return (
     <>
       <Card className="w-full mt-3">
-        <CardTitle>
-          <h1 className="text-2xl font-bold">Monitoreo</h1>
-        </CardTitle>
+        <CardTitle className="pl-6 py-3 text-xl">Monitoreo</CardTitle>
         <CardContent>
-          <h1>Formulario CTO</h1>
           <Form method="post" onSubmit={handleSubmit}>
             <Label htmlFor="cto">CTO</Label>
             <Input
@@ -88,7 +101,7 @@ export default function Monitoring() {
                 setFormData({ ...formData, cto: e.target.value })
               }
               placeholder="CTO"
-              required
+              disabled
             />
             <Label htmlFor="estado_cto">Estado CTO</Label>
             <Input
@@ -102,16 +115,6 @@ export default function Monitoring() {
               required
             />
             <Label htmlFor="observacion">Observación</Label>
-            {/* <Input
-              type="text"
-              name="observacion"
-              value={formData.observacion}
-              onChange={(e) =>
-                setFormData({ ...formData, observacion: e.target.value })
-              }
-              placeholder="Observación"
-              required
-            /> */}
             <Select
               value={formData.observacion}
               onValueChange={(value: string) =>
@@ -222,21 +225,6 @@ export default function Monitoring() {
               {editingId ? "Actualizar" : "Crear"}
             </Button>
           </Form>
-
-          {/* <div>
-            <h2>Lista de CTOs</h2>
-            <ul>
-              {items.map((item: any) => (
-                <li key={item.id}>
-                  {item.cto} - {item.estado_cto}
-                  <button onClick={() => handleEdit(item)}>Editar</button>
-                  <button onClick={() => handleDelete(item.id)}>
-                    Eliminar
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </div> */}
         </CardContent>
       </Card>
     </>
